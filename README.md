@@ -15,3 +15,7 @@ If I'll ever develop a course about Python, this repository will be the base.
 5. [Classes](https://colab.research.google.com/github/fbeilstein/python/blob/master/lecture_05_classes.ipynb)
 
 6. [Exceptions](https://colab.research.google.com/github/fbeilstein/python/blob/master/lecture_06_exceptions.ipynb)
+
+## Experimental
+
+[Different tests](https://colab.research.google.com/github/fbeilstein/python/blob/master/python_experiments.ipynb)
