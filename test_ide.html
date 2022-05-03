@@ -5,20 +5,23 @@
 <title>Simple Python IDE</title>
 <meta charset="utf-8"/>
 
+<script src="https://fbeilstein.github.io/python/coi-serviceworker.js"></script>
+
 <link rel="stylesheet" href="https://codemirror.net/mode/python/../../lib/codemirror.css">
 <script src="https://codemirror.net/mode/python/../../lib/codemirror.js"></script>
 <script src="https://codemirror.net/mode/python/../../addon/edit/matchbrackets.js"></script>
 <script src="https://codemirror.net/mode/python/python.js"></script>
 <style type="text/css">.CodeMirror {border: 2px solid black; border-right: 0px;}</style>
 
-<script src="https://cdn.plot.ly/plotly-latest.min.js"></script> 
+<!--<script src="https://cdn.plot.ly/plotly-latest.min.js"></script> 
 <script src='https://www.gstatic.com/external_hosted/mathjax/latest/MathJax.js?config=default'></script>
 
 <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
 <link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/1.10.21/css/jquery.dataTables.css">
 <script type="text/javascript" charset="utf8" src="https://cdn.datatables.net/1.10.21/js/jquery.dataTables.js"></script>
-
+-->
 <script type="text/javascript" charset="utf8" src="https://files.edx.org/custom-js-example/jschannel.js"></script>
+
 
 
 <style>
@@ -125,17 +128,16 @@ table.numpy_table td {
 
 <script id="pyodide_worker" type="text/javascript">
 
-
-  importScripts("https://cdn.jsdelivr.net/pyodide/v0.19.1/full/pyodide.js");
+  importScripts("https://cdn.jsdelivr.net/pyodide/v0.20.0/full/pyodide.js");
   async function loadPyodideAndPackages() {
 
 
 let apply_patches = `
 __print_mode__ = 'PRT'
 
-import micropip
-await micropip.install('plotly==5.0.0')
-await micropip.install('scikit-learn')
+#import micropip
+#await micropip.install('plotly==5.0.0')
+#await micropip.install('scikit-learn')
 
 
 def ensure_plotly_patch():
@@ -153,7 +155,7 @@ def ensure_plotly_patch():
 
     go.Figure.show = show
 
-ensure_plotly_patch()
+#ensure_plotly_patch()
 
 def ensure_matplotlib_patch():
     import os
@@ -179,7 +181,7 @@ def ensure_matplotlib_patch():
 
     plt.show = show
 
-ensure_matplotlib_patch()
+#ensure_matplotlib_patch()
 
 def visualize_array(array):
     import numpy as np
@@ -256,40 +258,67 @@ def visualize_pandas(obj, ordering=False):
 
 
 
-    self.redirect = false;
+    self.running = false;
     self.print = function(text) {
       let print_mode = self.pyodide.globals.get('__print_mode__');
       self.postMessage({'data': text, 'out_type': print_mode, 'running': true});
     }
 
+    const sleep = ms => new Promise(res => setTimeout(res, ms));
+    const sab = new SharedArrayBuffer(1024);
+    const int32 = new Int32Array(sab);
+    self.input_buffer = "";
     self.pyodide = await loadPyodide({
-      indexURL: "https://cdn.jsdelivr.net/pyodide/v0.19.1/full/",
-      stdout: (text) => {self.redirect ? self.print(text) : console.log(text);},
+      indexURL: "https://cdn.jsdelivr.net/pyodide/v0.20.0/full/",
+      //stdin:  () => {let ib=self.input_buffer; self.input_buffer = ""; return ib; },
+      stdout: (text) => {self.running ? self.print(text) : console.log(text);},
       stderr: (text) => {self.postMessage({'data': text, 'out_type': "ERR", 'running': true});}
     });
-    await self.pyodide.loadPackage(["numpy", "pytz", "matplotlib", "pandas", "micropip"]);
+    ///////await self.pyodide.loadPackage(["numpy", "pytz", "matplotlib", "pandas", "micropip"]);
     try {
       await self.pyodide.runPythonAsync(apply_patches);
-      self.redirect = true;
+      self.running = true;
+      /*let clean_namespace = self.pyodide.globals.get("dict")();*/
     } catch(err) {
       self.postMessage({'data': err.toString(), 'out_type': "ERR", 'running': false});
+      self.running = false;
     }   
   }
   let pyodideReadyPromise = loadPyodideAndPackages();
 
-  // This script won't be parsed by JS engines because its type is javascript/worker.
-  self.onmessage = async function(e) {
+  self.init = async function() {
     self.postMessage({'data': "Loading Python...", 'out_type': "SYS", 'running': true});
-    let pyodide = await pyodideReadyPromise;
+    await pyodideReadyPromise;
     self.postMessage({'data': "Python Load Complete", 'out_type': "SYS", 'running': true});
+  }
+
+  self.process_code = async function(code, out_type, err_type) {
+    if (!self.running)
+      await self.init();
     try {
-        let output = await self.pyodide.runPythonAsync(e.data);
-        self.postMessage({'data': '------ FINISHED ------', 'out_type': "SYS", 'running': false});
+        let output = /*await*/ self.pyodide.runPythonAsync(code/*, { globals: {} }*/);
+        self.postMessage({'data': output, 'out_type': out_type, 'running': false});
     } catch(err) {
-        self.postMessage({'data': err.toString(), 'out_type': "ERR", 'running': false});
+        self.postMessage({'data': err.toString(), 'out_type': err_type, 'running': false});
+    }
+  }
+  self.input = async function(input) {
+    self.input_buffer += input;
+    self.postMessage({'data': self.input_buffer.length.toString(), 'out_type': 'ERR', 'running': true});
+  }
+
+
+  self.onmessage = async function(e) {
+    let data = e.data;
+    data = data instanceof Array ? data : [data];
+    for (d of data) {
+      if (d['type'] == 'INP')
+        self.input(d['data'])
+      if (d['type'] == 'COD')
+        self.process_code(d['data'], d['out_type'], d['err_type'])
     }
   };
-  // Rest of your worker code goes here.
+
 </script>
 
 <script>
@@ -310,19 +339,48 @@ function activate(global_id, activate_ids, button_element) {
 
 <script type="text/javascript">
 
+var worker = undefined;
+function revive_worker() {
+    var blob = new Blob([document.querySelector('#pyodide_worker').textContent], { type: "text/javascript" })
+    // Note: window.webkitURL.createObjectURL() in Chrome 10+.
+    var worker = new Worker(window.URL.createObjectURL(blob));
+    worker.onmessage = worker_message;
+    console.log(worker);
+    return worker;  
+}
+
 function evaluate_python() {
     if (worker == undefined)
         worker = revive_worker();
-    worker.postMessage(editors[0].getValue());
+    worker.postMessage({'type': 'COD', 
+                        'data': editors[0].getValue() + '\n\"====== FINISHED ======\"', 
+                        'out_type': 'SYS',
+                        'err_type': 'ERR'});
+}
+
+function test_python() {
+  if (worker == undefined)
+    worker = revive_worker();
+
+  worker.postMessage([{'type': 'COD', 'data': editors[0].getValue(), 'out_type': 'SYS', 'err_type': 'ERR'},
+                      {'type': 'COD', 'data': document.getElementById('tests').innerHTML, 'out_type': 'TST', 'err_type': 'TER'}]);
+    //worker.postMessage({'code': editors[0].getValue(), 'tests': document.getElementById('tests').innerHTML});  
+}
+
+function step() {
+  if (worker == undefined)
+    worker = revive_worker();
+  worker.postMessage({'type': 'INP', 'data': 'n\n'});  
 }
 
 function stop_python() {
-    if (worker != undefined)
-        worker.terminate();
-    worker = undefined;
+  if (worker != undefined)
+    worker.terminate();
+  worker = undefined;
+  worker_message({'data':{'data': 'Terminated by user...', 'out_type': "ERR", 'running': false}});
 }
 
-function worker_message(s) {
+async function worker_message(s) {
     let add_to_console = s['data']['data'];
     let output_type    = s['data']['out_type'];
     let is_running     = s['data']['running'];
@@ -330,6 +388,22 @@ function worker_message(s) {
     let btn = document.getElementById('run_btn');
     btn.innerHTML = is_running ? 'STOP' : 'RUN';
     btn.onclick   = is_running ? stop_python : evaluate_python;
+
+    console.log(s['data']);
+
+    if (output_type == "CLB") {
+      eval(add_to_console);
+      return;
+    }
+
+    if (output_type == "TST") {
+        tests_passed = true;
+        output_type  = "SYS";
+    }
+    if (output_type == "TER") {
+        tests_passed = false;
+        output_type  = "ERR";
+    }
 
     let output = document.getElementById('console_1');
     let colors = {'SYS': '<b style="color:blue">', 
@@ -342,15 +416,6 @@ function worker_message(s) {
     output.innerHTML += colors[output_type] + output_type + "></b>"
                      +  add_to_console + '<br>\n';
 }
-
-function revive_worker() {
-    var blob = new Blob([document.querySelector('#pyodide_worker').textContent], { type: "text/javascript" })
-    // Note: window.webkitURL.createObjectURL() in Chrome 10+.
-    var worker = new Worker(window.URL.createObjectURL(blob));
-    worker.onmessage = worker_message;
-    return worker;  
-}
-var worker = undefined;
 
 function clean(console) {
     console.innerHTML = "";
@@ -369,6 +434,9 @@ function clean(console) {
 
 <div class="tab">
   <button style="position:absolute" id="run_btn" onclick="evaluate_python();">RUN</button>
+  <button style="position:absolute; left:80px;" id="run_btn" onclick="test_python();">TEST</button>
+  <button style="position:absolute; left:160px;" id="dbg_btn" onclick="step();">STEP</button>
+
   <button style="position:relative; margin-left: 45%;" class="active" onclick="activate('outputs_1', ['console_1', 'clean_btn'], this);">Console</button>
   <!--<button onclick="activate('outputs_1', 'pendulum_1', this);">Pendulum 3D</button>
   <button onclick="activate('outputs_1', 'plot_1', this);">Plots</button>-->
@@ -382,126 +450,21 @@ print("========== TEST SIMPLE PYTHON =============")
 for i in range(10):
     print(i)
 
-print("========== TEST NUMPY VISUALIZATION =============")
+def solution(input_list):
+    pass
 
-import numpy as np
-arr = np.array([[1,2,3], [4,5,6]])
-visualize_array(arr)
-
-print("========== TEST TABLES VISUALIZATION =============")
-import pandas as pd
-
-data = {
-'animal': ['cat', 'cat', 'snake', 'dog', 'dog', 'cat', 'snake',  'cat', 'dog', 'dog'],
-'age': [2.5, 3, 0.5, np.nan, 5, 2, 4.5, np.nan, 7, 3],
-'visits': [1, 3, 2, 3, 2, 3, 1, 1, 2, 1],
-'priority': ['yes', 'yes', 'no', 'yes', 'no', 'no', 'no', 'yes', 'no', 'no']
-}
-labels = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j']
-
-
-df = pd.DataFrame(data, index=labels)
-visualize_pandas(df, ordering=True)
-
-print("========== TEST MATPLOTLIB VISUALIZATION =============")
-
-import numpy as np
-import matplotlib.pyplot as plt
-
-ax = plt.axes(projection='3d')
-
-# Data for a three-dimensional line
-zline = np.linspace(0, 15, 1000)
-xline = np.sin(zline)
-yline = np.cos(zline)
-ax.plot3D(xline, yline, zline, 'gray')
-
-# Data for three-dimensional scattered points
-zdata = 15 * np.random.random(100)
-xdata = np.sin(zdata) + 0.1 * np.random.randn(100)
-ydata = np.cos(zdata) + 0.1 * np.random.randn(100)
-ax.scatter3D(xdata, ydata, zdata, c=zdata, cmap='Greens');
-
-plt.show()
-
-print("========== TEST PLOTLY VISUALIZATION =============")
-
-from plotly.subplots import make_subplots
-import plotly.graph_objects as go
-import numpy as np
-
-def rosen_3d(x, y):
-    return (1-x)**2+100*(y-x**2)**2
-
-def rosen_flat(x, y):
-    return np.log(rosen_3d(x, y)*100.0 + 1.0)
-
-def rastrigin(x, y):
-    x *= 5
-    y *= 5
-    return 20.0 + x**2 + y**2 - 10 * np.cos(2 * np.pi * x) - 10 * np.cos(2* np.pi * y)
-
-def saddle(x, y):
-    y -= 0.5
-    return x**2 - y**2
-
-def himmelblau(x, y):
-    x *= 6.0
-    y = (y - 0.5) * 6.0
-    return (x**2 + y - 11)**2 + (x + y**2 - 7)**2
-
-def himmelblau_flat(x, y):
-    x *= 6.0
-    y = (y - 0.5) * 6.0
-    return np.log((x**2 + y - 11)**2 + (x + y**2 - 7)**2 + 1.0)
-
-fig = make_subplots(rows=1, cols=2, specs=[[{"type": "scene"}, {"type": "xy"}]])
-
-_x = np.linspace(-1.0, 1.2, num=200)
-_y = np.linspace(-0.5, 1.5, num=200)
-
-_z = np.array([[rosen_3d(X, Y) for X in _x] for Y in _y], dtype=float)
-fig.add_trace(go.Surface(x=_x, y=_y, z=_z, opacity=1.0, showscale=False), row=1, col=1)
-_z = np.array([[rosen_flat(X, Y) for X in _x] for Y in _y], dtype=float)
-fig.add_trace(go.Contour(x=_x, y=_y, z=_z, contours=dict(showlabels=False)), row=1, col=2)
-
-_z = np.array([[rastrigin(X, Y) for X in _x] for Y in _y], dtype=float)
-fig.add_trace(go.Surface(x=_x, y=_y, z=_z, opacity=1.0, showscale=False, visible=False), row=1, col=1)
-#_z = np.array([[rastrigin(X, Y) for X in _x] for Y in _y], dtype=float)
-fig.add_trace(go.Contour(x=_x, y=_y, z=_z, contours=dict(showlabels=False), visible=False), row=1, col=2)
-
-_z = np.array([[saddle(X, Y) for X in _x] for Y in _y], dtype=float)
-fig.add_trace(go.Surface(x=_x, y=_y, z=_z, opacity=1.0, showscale=False, visible=False), row=1, col=1)
-#_z = np.array([[saddle(X, Y) for X in _x] for Y in _y], dtype=float)
-fig.add_trace(go.Contour(x=_x, y=_y, z=_z, contours=dict(showlabels=False), visible=False), row=1, col=2)
-
-_z = np.array([[himmelblau(X, Y) for X in _x] for Y in _y], dtype=float)
-fig.add_trace(go.Surface(x=_x, y=_y, z=_z, opacity=1.0, showscale=False, visible=False), row=1, col=1)
-_z = np.array([[himmelblau_flat(X, Y) for X in _x] for Y in _y], dtype=float)
-fig.add_trace(go.Contour(x=_x, y=_y, z=_z, contours=dict(showlabels=False), visible=False), row=1, col=2)
-
-
-fig.update_layout(width=600, height=300, autosize=False, title_text="Function pathologies",
-                  scene=dict(aspectratio = dict(x=1, y=1, z=1)),
-                  showlegend=False,
-                  updatemenus = [{'type': 'buttons', 'buttons': [
-                      {'label': 'Long valley (Rosenbrock)', 'method': 'update',
-                       'args': [{'visible' : [True, True, False, False, False, False, False, False]}]},
-                      {'label': 'Oscillatory (Rastrigin)', 'method': 'update',
-                       'args': [{'visible' : [False, False, True, True, False, False, False, False]}]},
-                      {'label': 'Saddle Point', 'method': 'update',
-                       'args': [{'visible' : [False, False, False, False, True, True, False, False]}]}, 
-                      {'label': "Shallow (Himmelblau)", 'method': 'update',
-                       'args': [{'visible' : [False, False, False, False, False, False, True, True]}]}
-                 ]}])
-fig.show()
 </textarea>
+<div id = "tests">
+assert solution([1,2,3]) == 6
+"All tests passed"
+</div>
 </div>
 
 <div id="outputs_1" class="out_container">
   <div id="console_1" style="display:block; position:relative; overflow:auto; width:100%; height:100%">
   </div>
   <button id="clean_btn" style="position:absolute; bottom:0px; right:0px;" onclick="clean(console_1);">clear</button>
+
 
   <!--<div id="pendulum_1" class="out_container" style="display:none"></div>
   <div id="plot_1"     class="out_container" style="display:none"></div>-->
@@ -543,7 +506,7 @@ function get_editors()
 var editors = get_editors();
 // -----------
 
-var tests_passed = 3;
+var tests_passed = 0;
 
 /* globals Channel */
 
@@ -585,3 +548,45 @@ channel.bind('setState', setState);
 </body>
 
 </html>
+
+
+def print_dbg():
+    data = globals()
+    keys = [k for k in data.keys() if k[0] != '_']
+    res = {k: type(data[k]) for k in keys}
+    print(res)
+
+
+import pdb
+pdb.set_trace()
+
+
+#import pdb
+#pdb.set_trace()
+#del pdb
+
+def print_dbg():
+    import types
+    data = globals()
+    keys = [k for k in data.keys() if k[0] != '_' and type(data[k]) != types.FunctionType and type(data[k]) != types.BuiltinFunctionType and type(data[k]) != types.ModuleType]
+    res = {k: (type(data[k]), data[k]) for k in keys}
+    print(res)
+
+print("========== TEST SIMPLE PYTHON =============")
+
+class YO:
+    def __init__(self):
+        self.x = 12
+        self.s = "ololo"
+        
+yo = YO()
+l = [1,2,3,4,5]
+k = l
+
+for i in range(10):
+    print(i)
+    print_dbg()
+
+def solution(input_list):
+    pass
+
