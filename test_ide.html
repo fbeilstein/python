@@ -4,8 +4,8 @@
 
 <title>Simple Python IDE</title>
 <meta charset="utf-8"/>
+<meta http-equiv="origin-trial" content="Ahz0w4qZRr7Zq6YxYyTSUcQ/OxwspqY7im7fOMSBAzw3UWSMgJUBUUfnC9zvzXXL3etcUufbniDyqvP+F26T8AkAAAB+eyJvcmlnaW4iOiJodHRwczovL2ZiZWlsc3RlaW4uZ2l0aHViLmlvOjQ0MyIsImZlYXR1cmUiOiJVbnJlc3RyaWN0ZWRTaGFyZWRBcnJheUJ1ZmZlciIsImV4cGlyeSI6MTY1ODg3OTk5OSwiaXNTdWJkb21haW4iOnRydWV9">
 
-<script src="https://fbeilstein.github.io/python/coi-serviceworker.js"></script>
 
 <link rel="stylesheet" href="https://codemirror.net/mode/python/../../lib/codemirror.css">
 <script src="https://codemirror.net/mode/python/../../lib/codemirror.js"></script>
@@ -25,6 +25,10 @@
 
 
 <style>
+.debug {
+  background-color: #0000f1;
+}
+
 /* Style the tab */
 .tab {
   overflow:         hidden;
@@ -125,6 +129,7 @@ table.numpy_table td {
 }
 
 </style>
+
 
 <script id="pyodide_worker" type="text/javascript">
 
@@ -254,6 +259,43 @@ def visualize_pandas(obj, ordering=False):
     __print_mode__ = "HTM"
     print(result)
     __print_mode__ = old_mode
+
+
+def test_exact(expected_result, function, *arguments):
+    import sys
+    sys.tracebacklimit = 0
+    actual = None
+    processed = False
+    try:
+        actual = function(*arguments)
+        processed = True
+    except:
+        pass
+    if not processed:
+        raise(Exception(f"Solution failed when processing input:\\n{function.__name__}{arguments}").with_traceback(None))    
+    if actual != expected_result:
+        raise(Exception(f"Wrong result!\\ncall:\\n{function.__name__}{arguments}\\nresult:\\n{actual}\\nexpected:\\n{expected_result}").with_traceback(None))
+
+def print_dbg(data):
+    import types
+    keys = [k for k in data.keys() if k[:2] != '__' and type(data[k]) not in [types.BuiltinFunctionType, types.ModuleType, types.FunctionType, type] and k not in ["version_info"]] 
+    res  = "<table>"
+    res += "<tr><td>VAR</td><td>TYPE</td><td>VAL</td></tr>"
+    for k in keys:
+        res += "<tr>"
+        res += "<td>" + str(k) + "</td>"
+        res += "<td>" + type(data[k]).__name__ + "</td>"
+        if hasattr(data[k], '__dict__'):
+            res += "<td>" + str(data[k].__dict__) + "</td>"
+        else:
+            res += "<td>" + str(data[k]) + "</td>"
+    res += "</table>"
+    global __print_mode__
+    old_mode = __print_mode__
+    __print_mode__ = "HTM"
+    print(res)
+    __print_mode__ = old_mode
+
 `;
 
 
@@ -264,13 +306,10 @@ def visualize_pandas(obj, ordering=False):
       self.postMessage({'data': text, 'out_type': print_mode, 'running': true});
     }
 
-    const sleep = ms => new Promise(res => setTimeout(res, ms));
-    const sab = new SharedArrayBuffer(1024);
-    const int32 = new Int32Array(sab);
-    self.input_buffer = "";
+    self.shared_array = null;
     self.pyodide = await loadPyodide({
       indexURL: "https://cdn.jsdelivr.net/pyodide/v0.20.0/full/",
-      //stdin:  () => {let ib=self.input_buffer; self.input_buffer = ""; return ib; },
+      stdin:  () => {Atomics.wait(self.shared_array, 0, 0);Atomics.store(self.shared_array, 0, 0); return "s\n!print_dbg(locals())\n"; },
       stdout: (text) => {self.running ? self.print(text) : console.log(text);},
       stderr: (text) => {self.postMessage({'data': text, 'out_type': "ERR", 'running': true});}
     });
@@ -296,24 +335,23 @@ def visualize_pandas(obj, ordering=False):
     if (!self.running)
       await self.init();
     try {
-        let output = /*await*/ self.pyodide.runPythonAsync(code/*, { globals: {} }*/);
+        let output = await self.pyodide.runPythonAsync(code/*, { globals: {} }*/);
         self.postMessage({'data': output, 'out_type': out_type, 'running': false});
     } catch(err) {
         self.postMessage({'data': err.toString(), 'out_type': err_type, 'running': false});
     }
   }
-  self.input = async function(input) {
-    self.input_buffer += input;
-    self.postMessage({'data': self.input_buffer.length.toString(), 'out_type': 'ERR', 'running': true});
-  }
 
+  self.set_shared_array = function(shared_buffer) {
+    self.shared_array = new Int32Array(shared_buffer);
+  }
 
   self.onmessage = async function(e) {
     let data = e.data;
     data = data instanceof Array ? data : [data];
     for (d of data) {
-      if (d['type'] == 'INP')
-        self.input(d['data'])
+      if (d['type'] == 'SAR')
+        self.set_shared_array(d['data']);
       if (d['type'] == 'COD')
         self.process_code(d['data'], d['out_type'], d['err_type'])
     }
@@ -321,63 +359,66 @@ def visualize_pandas(obj, ordering=False):
 
 </script>
 
-<script>
-function activate(global_id, activate_ids, button_element) {
-  // activate clicked button
-  const button_holder = button_element.parentElement;
-  for (let i = 0; i < button_holder.children.length; i++)
-    button_holder.children[i].classList.remove("active");
-  button_element.classList.add("active");
-  // show corresponding plot
-  const plots_holder = document.getElementById(global_id);
-  for (let i = 0; i < plots_holder.children.length; i++)
-    plots_holder.children[i].style.display = 'none';
-  for (let i = 0; i < activate_ids.length; i++)
-    document.getElementById(activate_ids[i]).style.display = 'block';
-}
-</script>
-
 <script type="text/javascript">
 
 var worker = undefined;
+var sab  = new SharedArrayBuffer(1024);
+var i32a = new Int32Array(sab);
+var state = "STOP";//"RUN" "DEBUG" "TEST"????
 function revive_worker() {
     var blob = new Blob([document.querySelector('#pyodide_worker').textContent], { type: "text/javascript" })
     // Note: window.webkitURL.createObjectURL() in Chrome 10+.
     var worker = new Worker(window.URL.createObjectURL(blob));
     worker.onmessage = worker_message;
+    worker.postMessage({'type': 'SAR', 'data': sab});
     console.log(worker);
     return worker;  
 }
 
 function evaluate_python() {
-    if (worker == undefined)
+    if (state != "STOP")
+        stop_python();
+    if (!worker)
         worker = revive_worker();
+    state = "RUN";
     worker.postMessage({'type': 'COD', 
                         'data': editors[0].getValue() + '\n\"====== FINISHED ======\"', 
                         'out_type': 'SYS',
                         'err_type': 'ERR'});
 }
 
-function test_python() {
-  if (worker == undefined)
-    worker = revive_worker();
-
-  worker.postMessage([{'type': 'COD', 'data': editors[0].getValue(), 'out_type': 'SYS', 'err_type': 'ERR'},
-                      {'type': 'COD', 'data': document.getElementById('tests').innerHTML, 'out_type': 'TST', 'err_type': 'TER'}]);
-    //worker.postMessage({'code': editors[0].getValue(), 'tests': document.getElementById('tests').innerHTML});  
-}
-
-function step() {
-  if (worker == undefined)
-    worker = revive_worker();
-  worker.postMessage({'type': 'INP', 'data': 'n\n'});  
-}
-
 function stop_python() {
   if (worker != undefined)
     worker.terminate();
+  for (let i = 0; i < editors[0].lineCount(); i++)
+    editors[0].removeLineClass(i, 'background');
   worker = undefined;
+  state = "STOP";
   worker_message({'data':{'data': 'Terminated by user...', 'out_type': "ERR", 'running': false}});
+}
+
+function test_python() {
+    if (state != "STOP")
+        stop_python();
+    if (!worker)
+        worker = revive_worker();
+    state = "TEST";
+
+  worker.postMessage([{'type': 'COD', 'data': editors[0].getValue(), 'out_type': 'SYS', 'err_type': 'ERR'},
+                      {'type': 'COD', 'data': document.getElementById('tests').innerHTML, 'out_type': 'TST', 'err_type': 'TER'}]);
+}
+
+function step() {
+  if (state != "STOP" && state != "DEBUG")
+      stop_python();
+  if (!worker)
+      worker = revive_worker();
+  if (state != "DEBUG") {
+    worker.postMessage([{'type': 'COD', 'data': 'import pdb; pdb.set_trace();\n' + editors[0].getValue(), 'out_type': 'SYS', 'err_type': 'ERR'}]);    
+  }
+  state = "DEBUG";
+  Atomics.store(i32a, 0, 25);
+  Atomics.notify(i32a, 0, 1); 
 }
 
 async function worker_message(s) {
@@ -388,8 +429,10 @@ async function worker_message(s) {
     let btn = document.getElementById('run_btn');
     btn.innerHTML = is_running ? 'STOP' : 'RUN';
     btn.onclick   = is_running ? stop_python : evaluate_python;
+    if (!is_running)
+      state = "STOP";
 
-    console.log(s['data']);
+    //console.log(s['data']);
 
     if (output_type == "CLB") {
       eval(add_to_console);
@@ -403,6 +446,14 @@ async function worker_message(s) {
     if (output_type == "TER") {
         tests_passed = false;
         output_type  = "ERR";
+    }
+
+    let line_regexp = new RegExp("> <exec>\\(([0-9]+)\\)", "g");
+    let match = line_regexp.exec(add_to_console);
+    if (match && match[1]) {
+      for (let i = 0; i < editors[0].lineCount(); i++)
+        editors[0].removeLineClass(i, 'background');
+      editors[0].addLineClass(parseInt(match[1], 10)-2, 'background', 'debug');
     }
 
     let output = document.getElementById('console_1');
@@ -454,8 +505,8 @@ def solution(input_list):
     pass
 
 </textarea>
-<div id = "tests">
-assert solution([1,2,3]) == 6
+<div id = "tests" style="display: none">
+test_exact(7, solution, [1,4,2])
 "All tests passed"
 </div>
 </div>
@@ -474,6 +525,19 @@ assert solution([1,2,3]) == 6
 
 
 <script>
+function activate(global_id, activate_ids, button_element) {
+  // activate clicked button
+  const button_holder = button_element.parentElement;
+  for (let i = 0; i < button_holder.children.length; i++)
+    button_holder.children[i].classList.remove("active");
+  button_element.classList.add("active");
+  // show corresponding plot
+  const plots_holder = document.getElementById(global_id);
+  for (let i = 0; i < plots_holder.children.length; i++)
+    plots_holder.children[i].style.display = 'none';
+  for (let i = 0; i < activate_ids.length; i++)
+    document.getElementById(activate_ids[i]).style.display = 'block';
+}
 
 function get_editors()
 {
@@ -490,12 +554,12 @@ function get_editors()
         indentUnit: 4,
         matchBrackets: true,
         lineWrapping: true,
-        indentWithTabs: false
-        /*extraKeys: {
+        indentWithTabs: false,
+        extraKeys: {
             "Tab": function(cm){
-              cm.replaceSelection("   " , "end");
+              cm.replaceSelection("    " , "end");
             }
-           }*/
+           }
       });
       result[i].setSize(null, getComputedStyle(editors[i])['height']);
       editors[i].value = i;
@@ -548,45 +612,4 @@ channel.bind('setState', setState);
 </body>
 
 </html>
-
-
-def print_dbg():
-    data = globals()
-    keys = [k for k in data.keys() if k[0] != '_']
-    res = {k: type(data[k]) for k in keys}
-    print(res)
-
-
-import pdb
-pdb.set_trace()
-
-
-#import pdb
-#pdb.set_trace()
-#del pdb
-
-def print_dbg():
-    import types
-    data = globals()
-    keys = [k for k in data.keys() if k[0] != '_' and type(data[k]) != types.FunctionType and type(data[k]) != types.BuiltinFunctionType and type(data[k]) != types.ModuleType]
-    res = {k: (type(data[k]), data[k]) for k in keys}
-    print(res)
-
-print("========== TEST SIMPLE PYTHON =============")
-
-class YO:
-    def __init__(self):
-        self.x = 12
-        self.s = "ololo"
-        
-yo = YO()
-l = [1,2,3,4,5]
-k = l
-
-for i in range(10):
-    print(i)
-    print_dbg()
-
-def solution(input_list):
-    pass
 
