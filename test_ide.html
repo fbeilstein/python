@@ -4,8 +4,8 @@
 
 <title>Simple Python IDE</title>
 <meta charset="utf-8"/>
-<meta http-equiv="origin-trial" content="Ahz0w4qZRr7Zq6YxYyTSUcQ/OxwspqY7im7fOMSBAzw3UWSMgJUBUUfnC9zvzXXL3etcUufbniDyqvP+F26T8AkAAAB+eyJvcmlnaW4iOiJodHRwczovL2ZiZWlsc3RlaW4uZ2l0aHViLmlvOjQ0MyIsImZlYXR1cmUiOiJVbnJlc3RyaWN0ZWRTaGFyZWRBcnJheUJ1ZmZlciIsImV4cGlyeSI6MTY1ODg3OTk5OSwiaXNTdWJkb21haW4iOnRydWV9">
 
+<script src="https://fbeilstein.github.io/python/coi-serviceworker.js"> </script>
 
 <link rel="stylesheet" href="https://codemirror.net/mode/python/../../lib/codemirror.css">
 <script src="https://codemirror.net/mode/python/../../lib/codemirror.js"></script>
@@ -574,27 +574,27 @@ var tests_passed = 0;
 
 /* globals Channel */
 
-    function getGrade() {
-        // The following return value may or may not be used to grade server-side.
-        // If getState and setState are used, then the Python grader also gets access
-        // to the return value of getState and can choose it instead to grade.
-        return JSON.stringify(tests_passed);
-    }
+function getGrade() {
+    // The following return value may or may not be used to grade server-side.
+    // If getState and setState are used, then the Python grader also gets access
+    // to the return value of getState and can choose it instead to grade.
+    return JSON.stringify(tests_passed);
+}
 
-    function getState() {
-        // Returns the current state (which can be used for grading).
-        return JSON.stringify({'code': editors[0].getValue()});
-    }
+function getState() {
+    // Returns the current state (which can be used for grading).
+    return JSON.stringify({'code': editors[0].getValue()});
+}
 
-    // This function will be called with 1 argument when JSChannel is not used,
-    // 2 otherwise. In the latter case, the first argument is a transaction
-    // object that will not be used here
-    // (see http://mozilla.github.io/jschannel/docs/)
-    function setState() {
-        let stateString = arguments.length === 1 ? arguments[0] : arguments[1];
-        let state = JSON.parse(stateString);
-        editors[0].setValue(state['code']);
-    }
+// This function will be called with 1 argument when JSChannel is not used,
+// 2 otherwise. In the latter case, the first argument is a transaction
+// object that will not be used here
+// (see http://mozilla.github.io/jschannel/docs/)
+function setState() {
+    let stateString = arguments.length === 1 ? arguments[0] : arguments[1];
+    let state = JSON.parse(stateString);
+    editors[0].setValue(state['code']);
+}
 
 channel = Channel.build({
             window: window.parent,
