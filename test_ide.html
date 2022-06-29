@@ -5,21 +5,15 @@
 <title>Simple Python IDE</title>
 <meta charset="utf-8"/>
 
-<script src="https://fbeilstein.github.io/python/coi-serviceworker.js"> </script>
+<script src="https://openedu.kau.org.ua/asset-v1:KAU+test-1+1+type@asset+block@coi-serviceworker.js"> </script>
 
-<link rel="stylesheet" href="https://codemirror.net/mode/python/../../lib/codemirror.css">
-<script src="https://codemirror.net/mode/python/../../lib/codemirror.js"></script>
-<script src="https://codemirror.net/mode/python/../../addon/edit/matchbrackets.js"></script>
-<script src="https://codemirror.net/mode/python/python.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.32.0/codemirror.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.32.0/mode/python/python.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.32.0/addon/edit/matchBrackets.js"></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.32.0/codemirror.min.css" />
 <style type="text/css">.CodeMirror {border: 2px solid black; border-right: 0px;}</style>
 
-<!--<script src="https://cdn.plot.ly/plotly-latest.min.js"></script> 
-<script src='https://www.gstatic.com/external_hosted/mathjax/latest/MathJax.js?config=default'></script>
 
-<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
-<link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/1.10.21/css/jquery.dataTables.css">
-<script type="text/javascript" charset="utf8" src="https://cdn.datatables.net/1.10.21/js/jquery.dataTables.js"></script>
--->
 <script type="text/javascript" charset="utf8" src="https://files.edx.org/custom-js-example/jschannel.js"></script>
 
 
@@ -298,20 +292,40 @@ def print_dbg(data):
 
 `;
 
-
-
     self.running = false;
     self.print = function(text) {
       let print_mode = self.pyodide.globals.get('__print_mode__');
-      self.postMessage({'data': text, 'out_type': print_mode, 'running': true});
+      if (!self.shared_array && self.debug)
+        self.recorded.push({'data': text, 'out_type': print_mode, 'running': true});
+      else
+        self.postMessage({'data': text, 'out_type': print_mode, 'running': true});
     }
 
     self.shared_array = null;
+    self.times = 1000;
+    self.recorded = [];
     self.pyodide = await loadPyodide({
       indexURL: "https://cdn.jsdelivr.net/pyodide/v0.20.0/full/",
-      stdin:  () => {Atomics.wait(self.shared_array, 0, 0);Atomics.store(self.shared_array, 0, 0); return "s\n!print_dbg(locals())\n"; },
+      stdin:  () => {
+        self.debug = true;
+        if (self.shared_array) {
+          Atomics.wait(self.shared_array, 0, 0);
+          Atomics.store(self.shared_array, 0, 0);
+          return "s\n!print_dbg(locals())\n"; 
+        }
+        if(!self.times) 
+          return "quit();\n"; 
+        self.times -= 1; 
+        self.recorded.push({'out_type': 'BRK'});
+        return "s\n!print_dbg(locals())\n"; 
+      },
       stdout: (text) => {self.running ? self.print(text) : console.log(text);},
-      stderr: (text) => {self.postMessage({'data': text, 'out_type': "ERR", 'running': true});}
+      stderr: (text) => {
+        if (!self.shared_array && self.debug)
+          self.recorded.push({'data': text, 'out_type': "ERR", 'running': true});
+        else
+          self.postMessage({'data': text, 'out_type': "ERR", 'running': true});
+      }
     });
     ///////await self.pyodide.loadPackage(["numpy", "pytz", "matplotlib", "pandas", "micropip"]);
     try {
@@ -336,9 +350,15 @@ def print_dbg(data):
       await self.init();
     try {
         let output = await self.pyodide.runPythonAsync(code/*, { globals: {} }*/);
-        self.postMessage({'data': output, 'out_type': out_type, 'running': false});
+        if (!self.shared_array && self.debug)
+          self.recorded.push({'data': output, 'out_type': out_type, 'running': false});
+        else
+          self.postMessage({'data': output, 'out_type': out_type, 'running': false});
     } catch(err) {
-        self.postMessage({'data': err.toString(), 'out_type': err_type, 'running': false});
+        if (!self.shared_array && self.debug)
+          self.recorded.push({'data': err.toString(), 'out_type': err_type, 'running': false});
+        else
+          self.postMessage({'data': err.toString(), 'out_type': err_type, 'running': false});
     }
   }
 
@@ -354,7 +374,17 @@ def print_dbg(data):
         self.set_shared_array(d['data']);
       if (d['type'] == 'COD')
         self.process_code(d['data'], d['out_type'], d['err_type'])
+      if (d['type'] == 'PLY') {
+        console.log(self.recorded);
+        let data = {'out_type': 'dummy'};
+        while (self.recorded.length > 0 && data['out_type'] != "BRK") {
+          data = self.recorded.shift();
+          if (data['out_type'] != "BRK")
+            postMessage(data);
+        }
+      }
     }
+
   };
 
 </script>
@@ -370,7 +400,8 @@ function revive_worker() {
     // Note: window.webkitURL.createObjectURL() in Chrome 10+.
     var worker = new Worker(window.URL.createObjectURL(blob));
     worker.onmessage = worker_message;
-    worker.postMessage({'type': 'SAR', 'data': sab});
+    if (sab)
+      worker.postMessage({'type': 'SAR', 'data': sab});
     console.log(worker);
     return worker;  
 }
@@ -414,14 +445,21 @@ function step() {
   if (!worker)
       worker = revive_worker();
   if (state != "DEBUG") {
+    console.log('ololololo', state);
     worker.postMessage([{'type': 'COD', 'data': 'import pdb; pdb.set_trace();\n' + editors[0].getValue(), 'out_type': 'SYS', 'err_type': 'ERR'}]);    
   }
   state = "DEBUG";
-  Atomics.store(i32a, 0, 25);
-  Atomics.notify(i32a, 0, 1); 
+  if (sab) {
+    Atomics.store(i32a, 0, 25);
+    Atomics.notify(i32a, 0, 1);     
+  } else {
+    worker.postMessage([{'type': 'PLY', 'data': '', 'out_type': 'SYS', 'err_type': 'ERR'}]);
+  }
 }
 
 async function worker_message(s) {
+    console.log(s);
+
     let add_to_console = s['data']['data'];
     let output_type    = s['data']['out_type'];
     let is_running     = s['data']['running'];
@@ -492,6 +530,8 @@ function clean(console) {
   <!--<button onclick="activate('outputs_1', 'pendulum_1', this);">Pendulum 3D</button>
   <button onclick="activate('outputs_1', 'plot_1', this);">Plots</button>-->
 </div>
+
+
 
 <div class="code">
 <textarea class="code" id="problem_1_code">
