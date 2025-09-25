@@ -16,6 +16,15 @@ If I'll ever develop a course about Python, this repository will be the base.
 
 6. [Exceptions](https://colab.research.google.com/github/fbeilstein/python/blob/master/lecture_06_exceptions.ipynb)
 
+
+## Useful Resources
+
+* [Python Tutorial](https://docs.python.org/3/tutorial/index.html)
+* [Python problems (Hackerrank)](https://www.hackerrank.com/domains/python)
+* [Study Git (learngitbranching)](https://learngitbranching.js.org/?locale=en_US)
+* [GitBook](https://git-scm.com/book/en/v2)
+
 ## Experimental
 
 [Different tests](https://colab.research.google.com/github/fbeilstein/python/blob/master/python_experiments.ipynb)
+
