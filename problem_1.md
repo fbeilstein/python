@@ -63,13 +63,13 @@ Consider figure 1. The ball has coordinates $\vec{p}$ and we should check whethe
 We consider the ball to be bouncing if its center $\vec{p}$ is inside the "hitbox" shown in figure 2. The hitbox is rectangular and has width $|\vec{A}-\vec{B}| + r$, where $r$ is the ball's radius. Height of the hitbox is $2r$. Please not how the $AB$ segment is positioned inside the hitbox.
 * Calculate the halfwidth and the halfheight of the hitbox: $d_{||} = |\vec{A} - \vec{B}|/2 + r/2$ and $d_\perp = r$
 
-![image2]()
+![image2](https://raw.githubusercontent.com/fbeilstein/python/master/practice_1/image2.png)
 
 The easiest way to check that ball's center $\vec{p}$ is (or is not) in the hitbox is to decompose the vector $\vec{p} - \frac{\vec{A}+\vec{B}}{2}$ into components parallel to $\vec{A} - \vec{B}$, say $\vec{w}_{||}$, and perpendicular to it $\vec{w}_\perp$. See figure 3 for details.
 * Suppose, current position of the ball is $\vec{p}$. Calculate vector $\vec{w} = \vec{p} - \frac{\vec{A} + \vec{B}}{2}$ that is position of the ball relative to the segment's center
 * Use `decompose` method of $\vec{w}$ with argument $\vec{A} - \vec{B}$ to get $\vec{w}_{||}$ and $\vec{w}_\perp$ that are projections of $\vec{w}$ on the segment and its normal; notice that the `decompose` method returns two vectors, $\vec{w}_{||}$ is the first
 
-![image3]()
+![image3](https://raw.githubusercontent.com/fbeilstein/python/master/practice_1/image3.png)
 
 We suppose that ball hits the segment, when **both** following conditions are satisfied
 * Center of the ball is inside the hitbox, namely $|\vec{w}_{||}| < d_{||}$ **and** $|\vec{w}_\perp| < d_\perp$; use method `lng` when needed
