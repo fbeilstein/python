@@ -1,3 +1,4 @@
+#Problem 1.
 Implement a very simple class `Vector2D` and a function `clamp`. I expect you to implement the following:
 
 **Part A** implement methods of the `Vector2D` class, check that vector tests pass.
@@ -18,4 +19,33 @@ Implement a very simple class `Vector2D` and a function `clamp`. I expect you to
 
 
 **Part B** implement function `clamp`, check that clamp tests pass
-* function `clamp(x, x_min, x_max)` -- should return `x_min` if `x < x_min`; `x_max` if `x > m_max` and `x` otherwise
+function `clamp(x, x_min, x_max)` -- should return `x_min` if `x < x_min`; `x_max` if `x > m_max` and `x` otherwise
+
+  
+# Part 2
+
+* Implement missing functions in class `Ball`
+   - `__init__(self, radius, pos, velocity, gravity)` -- constructor; it is given a bunch of data that you should save to internal variables:
+       + `radius` -- ball radius, integer
+       + `pos` -- `Vector2D` that contains current coordinates
+       + `velocity` -- `Vector2D`, velocity of the ball
+       + `gravity` -- float number, gravity
+   - `get_coordinates(self)` -- return a `Vector2D` that contains current coordinates of the ball
+   - `get_properties(self)` -- return a float (ball radius)
+   - `move` -- imlement ball movement. You may suppose the time is dimensionless. I expect you to update ball's position basing on the current position, say $\vec{p}_{\text{current}}$, and current velocity, say $\vec{v}_{\text{current}}$, as
+   $$
+   \vec{p}_{\text{updated}} = \vec{p}_{\text{current}} + \vec{v}_{\text{current}},
+   $$
+   than update the $y$ coordinate of the velocity
+   $$
+   v_{y,\text{updated}} = v_{y,\text{current}} - g
+   $$
+   and clamp the updated velocity to prevent it from overgrowing. Make sure that it is always true that
+   $$
+   \begin{aligned}
+   -\frac{r}{2} < v_{x,\text{updated}} < \frac{r}{2},\\
+   -\frac{r}{2} < v_{y,\text{updated}} < \frac{r}{2}.
+   \end{aligned}
+   $$
+   Function `clamp` will be helpful.
+* Make sure all tests are passing
