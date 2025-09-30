@@ -1,4 +1,5 @@
-#Problem 1.
+# Part 1
+
 Implement a very simple class `Vector2D` and a function `clamp`. I expect you to implement the following:
 
 **Part A** implement methods of the `Vector2D` class, check that vector tests pass.
@@ -49,3 +50,27 @@ function `clamp(x, x_min, x_max)` -- should return `x_min` if `x < x_min`; `x_ma
    $$
    Function `clamp` will be helpful.
 * Make sure all tests are passing
+
+# Part 3
+
+Now we will endow the ball with the ability to bounce.
+* Implement `check_collision_and_bounce(self, A, B)` function. As an input the function takes two parameters `A` and `B` both of the type `Vector2D`. These are the endpoints of certain segment you should bounce the ball off. Your function should return `True` if the ball bounced and `False` otherwise. This is the challenging part, please read carefully the following explanation how to implement the function.
+
+Consider figure 1. The ball has coordinates $\vec{p}$ and we should check whether it hits segment with endpoints $\vec{A}$ and $\vec{B}$.
+![image1]()
+We consider the ball to be bouncing if its center $\vec{p}$ is inside the "hitbox" shown in figure 2. The hitbox is rectangular and has width $|\vec{A}-\vec{B}| + r$, where $r$ is the ball's radius. Height of the hitbox is $2r$. Please not how the $AB$ segment is positioned inside the hitbox.
+* Calculate the halfwidth and the halfheight of the hitbox: $d_{||} = |\vec{A} - \vec{B}|/2 + r/2$ and $d_\perp = r$
+![image2]()
+The easiest way to check that ball's center $\vec{p}$ is (or is not) in the hitbox is to decompose the vector $\vec{p} - \frac{\vec{A}+\vec{B}}{2}$ into components parallel to $\vec{A} - \vec{B}$, say $\vec{w}_{||}$, and perpendicular to it $\vec{w}_\perp$. See figure 3 for details.
+* Suppose, current position of the ball is $\vec{p}$. Calculate vector $\vec{w} = \vec{p} - \frac{\vec{A} + \vec{B}}{2}$ that is position of the ball relative to the segment's center
+* Use `decompose` method of $\vec{w}$ with argument $\vec{A} - \vec{B}$ to get $\vec{w}_{||}$ and $\vec{w}_\perp$ that are projections of $\vec{w}$ on the segment and its normal; notice that the `decompose` method returns two vectors, $\vec{w}_{||}$ is the first
+![image3]()
+We suppose that ball hits the segment, when **both** following conditions are satisfied
+* Center of the ball is inside the hitbox, namely $|\vec{w}_{||}| < d_{||}$ **and** $|\vec{w}_\perp| < d_\perp$; use method `lng` when needed
+* The ball is moving **toward** the segment, i.e. if it has velocity $\vec{v}$ then $(\vec{v} \cdot \vec{w}_\perp) < 0$; use method `dot` when needed
+
+After you determined if the segment is hit, do the following:
+* If the segment is not hit, return `False` and do nothing
+* If the segment is hit, decompose ball's velocity $\vec{v}$ into components parallel to $\vec{A} - \vec{B}$, say $\vec{v}_{||}$, and perpendicular $\vec{v}_\perp$, then update $\vec{v}_{\text{updated}} = \vec{v}_{||} - \vec{v}_\perp$ and return `True`; notice that before the update the velocity was $\vec{v} = \vec{v}_{||} + \vec{v}_\perp$
+
+**Note:** you may have noticed that for large velocities ball will tunnel through the wall (how quantum-mechanically, I should say :) ). This is the reason, why I asked you to limit its speed in the previous problem. If you have ignored this part of the instructions, it's time to implement it. Or you may come up with some more robust and cunning algorithm for bouncing -- let me know and I will consider it for the future runs of the course.
