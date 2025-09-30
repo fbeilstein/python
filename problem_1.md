@@ -15,7 +15,7 @@ Implement a very simple class `Vector2D` and a function `clamp`. I expect you to
 * `decompose` -- return two `Vector2D` objects that are decomposition of the given vector $\vec{v}$ (`self`) along vector $\vec{n}$ (`other`) and $\vec{n}_\perp$. You can use the following algorithm:
     - calculate $\vec{e} = \vec{n} / |\vec{n}|$, use `lng` method of `other` ($\vec{n}$)
     - calculate $\vec{e}_\perp$ -- use `perp` method of the vector $\vec{e}$
-    - calculate $\vec{u}_{\|\|} = \vec{e} (\vec{v} \cdot \vec{e})$ and $\vec{u}_\perp = \vec{e}_\perp (\vec{v} \cdot \vec{e}_\perp)$, use `dot` method; notice that $\vec{u}_{||}$ is parallel to $\vec{n}$ and $\vec{u}_\perp$ is perpendicular to $\vec{n}$, $\vec{v} = \vec{u}_{||} + \vec{u}_\perp$
+    - calculate $\vec{u}_ {||} = \vec{e} (\vec{v} \cdot \vec{e})$ and $\vec{u}_\perp = \vec{e}_\perp (\vec{v} \cdot \vec{e}_\perp)$, use `dot` method; notice that $\vec{u}_{||}$ is parallel to $\vec{n}$ and $\vec{u}_\perp$ is perpendicular to $\vec{n}$, $\vec{v} = \vec{u}_{||} + \vec{u}_\perp$
     - return $\vec{u}_{||}$ and $\vec{u}_\perp$ in exactly this order -- parallel component first
 
 
