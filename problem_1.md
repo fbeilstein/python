@@ -58,7 +58,7 @@ Now we will endow the ball with the ability to bounce.
 
 Consider figure 1. The ball has coordinates $\vec{p}$ and we should check whether it hits segment with endpoints $\vec{A}$ and $\vec{B}$.
 
-![image1]()
+![image1](https://raw.githubusercontent.com/fbeilstein/python/master/practice_1/image1.png)
 
 We consider the ball to be bouncing if its center $\vec{p}$ is inside the "hitbox" shown in figure 2. The hitbox is rectangular and has width $|\vec{A}-\vec{B}| + r$, where $r$ is the ball's radius. Height of the hitbox is $2r$. Please not how the $AB$ segment is positioned inside the hitbox.
 * Calculate the halfwidth and the halfheight of the hitbox: $d_{||} = |\vec{A} - \vec{B}|/2 + r/2$ and $d_\perp = r$
