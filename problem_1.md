@@ -38,10 +38,12 @@ $$\vec{p}\_{\text{updated}} = \vec{p}\_{\text{current}} + \vec{v}\_{\text{curren
    than update the $y$ coordinate of the velocity
 $$v\_{y,\text{updated}} = v\_{y,\text{current}} - g$$
    and clamp the updated velocity to prevent it from overgrowing. Make sure that it is always true that
-$$\begin{aligned}
+```math
+\begin{aligned}
    -\frac{r}{2} < v\_{x,\text{updated}} < \frac{r}{2},\\
    -\frac{r}{2} < v\_{y,\text{updated}} < \frac{r}{2}.
-   \end{aligned}$$
+   \end{aligned}
+```
    Function `clamp` will be helpful.
 * Make sure all tests are passing
 
