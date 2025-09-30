@@ -34,13 +34,13 @@ function `clamp(x, x_min, x_max)` -- should return `x_min` if `x < x_min`; `x_ma
    - `get_coordinates(self)` -- return a `Vector2D` that contains current coordinates of the ball
    - `get_properties(self)` -- return a float (ball radius)
    - `move` -- imlement ball movement. You may suppose the time is dimensionless. I expect you to update ball's position basing on the current position, say $\vec{p}\_{\text{current}}$, and current velocity, say $\vec{v}\_{\text{current}}$, as
-   $$
+\[
    \vec{p}\_{\text{updated}} = \vec{p}\_{\text{current}} + \vec{v}\_{\text{current}},
-   $$
+\]
    than update the $y$ coordinate of the velocity
-   $$
-   v\_{y,\text{updated}} = v\_{y,\text{current}} - g
-   $$
+\[
+  v_{y,\text{updated}} = v_{y,\text{current}} - g
+\]
    and clamp the updated velocity to prevent it from overgrowing. Make sure that it is always true that
    $$
    \begin{aligned}
