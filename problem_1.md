@@ -33,19 +33,19 @@ function `clamp(x, x_min, x_max)` -- should return `x_min` if `x < x_min`; `x_ma
        + `gravity` -- float number, gravity
    - `get_coordinates(self)` -- return a `Vector2D` that contains current coordinates of the ball
    - `get_properties(self)` -- return a float (ball radius)
-   - `move` -- imlement ball movement. You may suppose the time is dimensionless. I expect you to update ball's position basing on the current position, say $\vec{p}_{\text{current}}$, and current velocity, say $\vec{v}_{\text{current}}$, as
+   - `move` -- imlement ball movement. You may suppose the time is dimensionless. I expect you to update ball's position basing on the current position, say $\vec{p}\_{\text{current}}$, and current velocity, say $\vec{v}\_{\text{current}}$, as
    $$
-   \vec{p}_{\text{updated}} = \vec{p}_{\text{current}} + \vec{v}_{\text{current}},
+   \vec{p}\_{\text{updated}} = \vec{p}\_{\text{current}} + \vec{v}\_{\text{current}},
    $$
    than update the $y$ coordinate of the velocity
    $$
-   v_{y,\text{updated}} = v_{y,\text{current}} - g
+   v\_{y,\text{updated}} = v\_{y,\text{current}} - g
    $$
    and clamp the updated velocity to prevent it from overgrowing. Make sure that it is always true that
    $$
    \begin{aligned}
-   -\frac{r}{2} < v_{x,\text{updated}} < \frac{r}{2},\\
-   -\frac{r}{2} < v_{y,\text{updated}} < \frac{r}{2}.
+   -\frac{r}{2} < v\_{x,\text{updated}} < \frac{r}{2},\\
+   -\frac{r}{2} < v\_{y,\text{updated}} < \frac{r}{2}.
    \end{aligned}
    $$
    Function `clamp` will be helpful.
@@ -61,23 +61,23 @@ Consider figure 1. The ball has coordinates $\vec{p}$ and we should check whethe
 ![image1](https://raw.githubusercontent.com/fbeilstein/python/master/practice_1/image1.png)
 
 We consider the ball to be bouncing if its center $\vec{p}$ is inside the "hitbox" shown in figure 2. The hitbox is rectangular and has width $|\vec{A}-\vec{B}| + r$, where $r$ is the ball's radius. Height of the hitbox is $2r$. Please not how the $AB$ segment is positioned inside the hitbox.
-* Calculate the halfwidth and the halfheight of the hitbox: $d_{||} = |\vec{A} - \vec{B}|/2 + r/2$ and $d_\perp = r$
+* Calculate the halfwidth and the halfheight of the hitbox: $d\_{||} = |\vec{A} - \vec{B}|/2 + r/2$ and $d\_\perp = r$
 
 ![image2](https://raw.githubusercontent.com/fbeilstein/python/master/practice_1/image2.png)
 
-The easiest way to check that ball's center $\vec{p}$ is (or is not) in the hitbox is to decompose the vector $\vec{p} - \frac{\vec{A}+\vec{B}}{2}$ into components parallel to $\vec{A} - \vec{B}$, say $\vec{w}_{||}$, and perpendicular to it $\vec{w}_\perp$. See figure 3 for details.
+The easiest way to check that ball's center $\vec{p}$ is (or is not) in the hitbox is to decompose the vector $\vec{p} - \frac{\vec{A}+\vec{B}}{2}$ into components parallel to $\vec{A} - \vec{B}$, say $\vec{w}\_{||}$, and perpendicular to it $\vec{w}\_\perp$. See figure 3 for details.
 * Suppose, current position of the ball is $\vec{p}$. Calculate vector $\vec{w} = \vec{p} - \frac{\vec{A} + \vec{B}}{2}$ that is position of the ball relative to the segment's center
-* Use `decompose` method of $\vec{w}$ with argument $\vec{A} - \vec{B}$ to get $\vec{w}_{||}$ and $\vec{w}_\perp$ that are projections of $\vec{w}$ on the segment and its normal; notice that the `decompose` method returns two vectors, $\vec{w}_{||}$ is the first
+* Use `decompose` method of $\vec{w}$ with argument $\vec{A} - \vec{B}$ to get $\vec{w}\_{||}$ and $\vec{w}\_\perp$ that are projections of $\vec{w}$ on the segment and its normal; notice that the `decompose` method returns two vectors, $\vec{w}\_{||}$ is the first
 
 ![image3](https://raw.githubusercontent.com/fbeilstein/python/master/practice_1/image3.png)
 
 We suppose that ball hits the segment, when **both** following conditions are satisfied
-* Center of the ball is inside the hitbox, namely $|\vec{w}_{||}| < d_{||}$ **and** $|\vec{w}_\perp| < d_\perp$; use method `lng` when needed
-* The ball is moving **toward** the segment, i.e. if it has velocity $\vec{v}$ then $(\vec{v} \cdot \vec{w}_\perp) < 0$; use method `dot` when needed
+* Center of the ball is inside the hitbox, namely $|\vec{w}\_{||}| < d\_{||}$ **and** $|\vec{w}\_\perp| < d\_\perp$; use method `lng` when needed
+* The ball is moving **toward** the segment, i.e. if it has velocity $\vec{v}$ then $(\vec{v} \cdot \vec{w}\_\perp) < 0$; use method `dot` when needed
 
 After you determined if the segment is hit, do the following:
 * If the segment is not hit, return `False` and do nothing
-* If the segment is hit, decompose ball's velocity $\vec{v}$ into components parallel to $\vec{A} - \vec{B}$, say $\vec{v}_{||}$, and perpendicular $\vec{v}_\perp$, then update $\vec{v}_{\text{updated}} = \vec{v}_{||} - \vec{v}_\perp$ and return `True`; notice that before the update the velocity was $\vec{v} = \vec{v}_{||} + \vec{v}_\perp$
+* If the segment is hit, decompose ball's velocity $\vec{v}$ into components parallel to $\vec{A} - \vec{B}$, say $\vec{v}\_{||}$, and perpendicular $\vec{v}\_\perp$, then update $\vec{v}\_{\text{updated}} = \vec{v}\_{||} - \vec{v}\_\perp$ and return `True`; notice that before the update the velocity was $\vec{v} = \vec{v}\_{||} + \vec{v}\_\perp$
 
 **Note:** you may have noticed that for large velocities ball will tunnel through the wall (how quantum-mechanically, I should say :) ). This is the reason, why I asked you to limit its speed in the previous problem. If you have ignored this part of the instructions, it's time to implement it. Or you may come up with some more robust and cunning algorithm for bouncing -- let me know and I will consider it for the future runs of the course.
 
