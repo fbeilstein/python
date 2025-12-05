@@ -6,31 +6,42 @@ class Vector2D:
         self.x, self.y = x, y
 
     def __add__(self, other): 
-        # WRITE YOUR CODE HERE
+        # REMOVE pass and WRITE YOUR CODE HERE
+        pass
     
     def __sub__(self, other): 
-        # WRITE YOUR CODE HERE
+        # REMOVE pass and WRITE YOUR CODE HERE
+        pass
 
     def __mul__(self, num): 
-        # WRITE YOUR CODE HERE
+        # REMOVE pass and WRITE YOUR CODE HERE
+        pass
 
-    def __rmul__(self, num): return self.__mul__(num)
-    def __truediv__(self, num): return self.__mul__(1.0 / num)
+    def __rmul__(self, num): 
+        return self.__mul__(num)
+
+    def __truediv__(self, num): 
+        return self.__mul__(1.0 / num)
 
     def dot(self, other): 
-        # WRITE YOUR CODE HERE
+        # REMOVE pass and WRITE YOUR CODE HERE
+        pass
 
-    def perp(self): 
-        # WRITE YOUR CODE HERE
+    def perp(self):
+        # REMOVE pass and WRITE YOUR CODE HERE
+        pass
 
     def lng(self): 
-        # WRITE YOUR CODE HERE
+        # REMOVE pass and WRITE YOUR CODE HERE
+        pass
 
     def decompose(self, other):
-        # WRITE YOUR CODE HERE
+        # REMOVE pass and WRITE YOUR CODE HERE
+        pass
 
 def clamp(x, x_min, x_max):
-    # WRITE YOUR CODE HERE
+    # REMOVE pass and WRITE YOUR CODE HERE
+    pass
 
 
 if __name__ == "__main__":

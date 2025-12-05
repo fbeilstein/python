@@ -9,19 +9,23 @@ class Ball:
         self.g, self.clamp = gravity, clamp_v
 
     def move(self):
-        # WRITE YOUR CODE HERE
+        # REMOVE pass and WRITE YOUR CODE HERE
+        pass
 
     def check_collision_and_bounce(self, A, B):
-        # WRITE YOUR CODE HERE
+        # REMOVE pass and WRITE YOUR CODE HERE
+        pass
 
     def add_to_velocity(self, v):
         self.v += v
 
     def get_coordinates(self): 
-        # WRITE YOUR CODE HERE
+        # REMOVE pass and WRITE YOUR CODE HERE
+        pass
 
     def get_properties(self): 
-        # WRITE YOUR CODE HERE
+        # REMOVE pass and WRITE YOUR CODE HERE
+        pass
 
 
 if __name__ == "__main__":

@@ -9,10 +9,12 @@ class Paddle:
         self.total_w, self.total_h = total_w, total_h
 
     def move(self):
-        # WRITE YOUR CODE HERE       
+        # REMOVE pass and WRITE YOUR CODE HERE
+        pass       
 
     def get_sizes(self): 
-        # WRITE YOUR CODE HERE
+        # REMOVE pass and WRITE YOUR CODE HERE
+        pass
 
     def get_velocity(self): 
         return self.v * self.direction
@@ -21,6 +23,7 @@ class Paddle:
 if __name__ == "__main__":
     block = Paddle(Vector2D(400, 200), Vector2D(20, 20), 100)
     assert isinstance(block, Paddle), "Not an instance of Paddle"
+    assert isinstance(block.get_sizes(), tuple), "Not a tuple of values from get_sizes()"
     p, sz = block.get_sizes()
     assert p.x == 400 and p.y == 200, "Coordinates not set properly"
     assert sz.x == 20 and sz.y == 20, "Width/Height not set properly"
