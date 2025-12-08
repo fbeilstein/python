@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Periodic Bing Synth (Web Audio + Plotly)</title>
+  <title>Audio demo</title>
   <script src="https://cdn.plot.ly/plotly-2.24.1.min.js">// --- Auto-update plots ---
 function updateAll() {
   const baseFreq = parseFloat(document.getElementById('baseFreq').value);
@@ -41,7 +41,7 @@ document.querySelectorAll('input, checkbox, slider').forEach(el => {
   </style>
 </head>
 <body>
-  <h2>Periodic "Bing" Synth — Web Audio + Plotly</h2>
+  <h2>Sound Localization and Overtones Demo</h2>
   <div class="card">
     <div class="row">
       <div style="flex:1">
@@ -87,7 +87,7 @@ document.querySelectorAll('input, checkbox, slider').forEach(el => {
       </div>
     </div>
 
-    <div class="footer">Notes: Delay uses <code>DelayNode</code> (max 1 s). Attenuation mapping scales the chosen channel by factor between 1 and 1/10. Envelope is exp(-a*t) applied to the whole sum. Overtones are harmonic multiples (n*baseFreq) with amplitude scaled by 1/n (so main tone is strongest).</div>
+    <div class="footer"></div>
   </div>
 
   <div class="card two-plots">
